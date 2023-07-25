@@ -2,18 +2,16 @@
 import sys
 import threading
 
+import qrainbowstyle
 from PyQt5.QtCore import QDateTime, QTimer
-from selenium import webdriver
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDesktopWidget, QMessageBox
+from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 
 import my_ui.SeckillUi
 from settime import SetTime
-import qrainbowstyle
-
 
 
 class MainDialog(QMainWindow):
@@ -28,7 +26,7 @@ class MainDialog(QMainWindow):
         self.setStyleSheet(qrainbowstyle.load_stylesheet(style="DarkOrange"))
         self.screen = QDesktopWidget().screenGeometry()
         size = self.geometry()
-        self.move((self.screen.width() - size.width() - 80), (self.screen.height() - size.height()) / 2)
+        #self.move((self.screen.width() - size.width() - 80), (self.screen.height() - size.height()) / 2)
         self.browser = webdriver.Chrome()
         self.browser.set_window_size(self.screen.width() / 2, self.screen.height())
         print(sys.path[0])
@@ -98,30 +96,75 @@ class MainDialog(QMainWindow):
             return -1
 
         # 点击购买按钮
+        count = 0
+        epoh = 1
         while True:
             try:
-                self.ui.textBrowser.append("请选择商品详情，等待开抢...")
-                loc = (By.XPATH, "//*[@id=\"J_juValid\"]/div[1]/a")
-                WebDriverWait(self.browser, 30, 0.01).until(EC.visibility_of_element_located(loc))
-                self.browser.find_element(By.XPATH, "//*[@id=\"J_juValid\"]/div[1]/a").click()
-                break
-            except:
-                self.ui.textBrowser.append("正在等待开抢/抢购中...")
-                self.ui.textBrowser.moveCursor(self.ui.textBrowser.textCursor().End)
+                #self.ui.textBrowser.append("请选择商品详情，等待开抢...")
+                ele1 = self.browser.find_element(By.XPATH, "//*[starts-with(@class,'Actions--leftButtons')]")
+                ele2 = ele1.find_element(By.XPATH, "//*[starts-with(@class,'Actions--btn')]")
+                if (ele2.is_enabled()): ele2.click()
+                print("\r正在执行抢单第{}轮{}次".format(epoh, count), end='')
+                count += 1
+                self.browser.implicitly_wait(5)
 
-        # 点击提交订单按钮
-        while True:
-            try:
+                #提交订单
                 self.ui.textBrowser.append("提交订单中...")
                 loc = (By.LINK_TEXT, '提交订单')
                 WebDriverWait(self.browser, 30, 0.01).until(EC.visibility_of_element_located(loc))
                 self.browser.find_element(By.LINK_TEXT, '提交订单').click()
                 self.ui.textBrowser.append("抢购成功，请及时付款")
                 self.ui.textBrowser.moveCursor(self.ui.textBrowser.textCursor().End)
-                break
+                if (count >= 500):
+                    count = 0
+                    epoh += 1
+                    self.browser.get(goods_url)
+                    self.browser.implicitly_wait(10)
+
             except:
-                self.ui.textBrowser.append("再次尝试抢单...")
-                self.ui.textBrowser.moveCursor(self.ui.textBrowser.textCursor().End)
+                pass
+                if (count >= 10):
+                    count = 0
+                    epoh += 1
+                    self.browser.get(goods_url)
+                    self.browser.implicitly_wait(10)
+
+
+        # while True:
+        #     try:
+        #         self.ui.textBrowser.append("请选择商品详情，等待开抢...")
+        #         loc = (By.XPATH, "//*[@id=\"J_juValid\"]/div[1]/a")
+        #         # WebDriverWait(self.browser, 30, 0.01).until(EC.visibility_of_element_located(loc))
+        #         # self.browser.find_element(By.XPATH, "//*[@id=\"J_juValid\"]/div[1]/a").click()
+        #         #loc = (By.XPATH,"//*[starts-with(@class,'Actions--leftButtons')]")
+        #         ele1 = self.browser.find_element(By.XPATH,"//*[starts-with(@class,'Actions--leftButtons')]")
+        #         ele2 = ele1.find_element(By.XPATH,"//*[starts-with(@class,'Actions--btn')]")
+        #         print("\r正在执行抢单第{}轮{}次".format(epoh,count),end= '')
+        #         count += 1
+        #         if (count >= 500):
+        #             count = 0
+        #             epoh += 1
+        #             self.browser.get(goods_url)
+        #         WebDriverWait(self.browser, 30, 0.01).until(EC.visibility_of_element_located(loc))
+        #         ele2.click()
+        #         break
+        #     except:
+        #         self.ui.textBrowser.append("正在执行抢单第{}轮{}次".format(epoh,count))
+        #         self.ui.textBrowser.moveCursor(self.ui.textBrowser.textCursor().End)
+        #
+        # # 点击提交订单按钮
+        # while True:
+        #     try:
+        #         self.ui.textBrowser.append("提交订单中...")
+        #         loc = (By.LINK_TEXT, '提交订单')
+        #         WebDriverWait(self.browser, 30, 0.01).until(EC.visibility_of_element_located(loc))
+        #         self.browser.find_element(By.LINK_TEXT, '提交订单').click()
+        #         self.ui.textBrowser.append("抢购成功，请及时付款")
+        #         self.ui.textBrowser.moveCursor(self.ui.textBrowser.textCursor().End)
+        #         break
+        #     except:
+        #         self.ui.textBrowser.append("再次尝试抢单...")
+        #         self.ui.textBrowser.moveCursor(self.ui.textBrowser.textCursor().End)
 
     def quick_buy2jing(self):
         goods_url = self.ui.lineEdit.text()
